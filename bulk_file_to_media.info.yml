@@ -1,0 +1,8 @@
+name: 'Bulk File to Media Migration'
+type: module
+description: 'A custom Drush command to bulk convert migrated files to media entities.'
+core_version_requirement: ^10
+package: Custom
+dependencies:
+  - drupal:media
+  - drupal:file

@@ -1,0 +1,6 @@
+services:
+  bulk_file_to_media.drush_commands:
+    class: \Drupal\bulk_file_to_media\Commands\BulkFileToMediaDrushCommands
+    arguments: []
+    tags:
+      - { name: drush.command }
