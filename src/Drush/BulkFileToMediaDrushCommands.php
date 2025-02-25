@@ -17,8 +17,6 @@ class BulkFileToMediaDrushCommands extends DrushCommands {
    *
    * @command bulk_file_to_media:convert
    * @aliases bftm
-   * @usage bulk_file_to_media:convert
-   *   Converts files to media entities in bulk.
    */
   public function convertFilesToMedia() {
     $query = \Drupal::entityQuery('file')->accessCheck(FALSE);
@@ -42,10 +40,8 @@ class BulkFileToMediaDrushCommands extends DrushCommands {
         continue;
       }
 
-      // Get file extension.
       $file_extension = strtolower(pathinfo($file->getFilename(), PATHINFO_EXTENSION));
 
-      // Determine the appropriate media bundle and source field.
       if (in_array($file_extension, $image_extensions)) {
         $media_type = 'image';
         $source_field = 'field_media_image';
@@ -53,24 +49,23 @@ class BulkFileToMediaDrushCommands extends DrushCommands {
         $media_type = 'file';
         $source_field = 'field_media_file';
       } else {
-        // Skip unsupported file types.
         $skipped++;
         continue;
       }
 
-      // Ensure the media type exists.
+      // Check if media type exists.
       $media_type_exists = \Drupal::entityQuery('media_type')
         ->condition('id', $media_type)
         ->accessCheck(FALSE)
         ->execute();
 
       if (empty($media_type_exists)) {
-        $this->logger()->warning("Media type '$media_type' does not exist. Skipping file: " . $file->getFilename());
+        $this->logger()->warning("Media type '$media_type' does not exist. Skipping file: {$file->getFilename()}");
         $skipped++;
         continue;
       }
 
-      // Check if a media entity already exists for this file.
+      // Check for existing media entity.
       $existing_media = \Drupal::entityQuery('media')
         ->condition($source_field, $fid)
         ->accessCheck(FALSE)
@@ -80,8 +75,7 @@ class BulkFileToMediaDrushCommands extends DrushCommands {
         continue;
       }
 
-      // Create the media entity.
-      $media = Media::create([
+      $media_data = [
         'bundle' => $media_type,
         'name' => $file->getFilename(),
         'uid' => User::load(1)->id(),
@@ -89,15 +83,18 @@ class BulkFileToMediaDrushCommands extends DrushCommands {
         $source_field => [
           'target_id' => $fid,
         ],
-      ]);
+      ];
 
-      $media->set('bundle', $media_type);
+      if ($media_type == 'image') {
+        $media_data[$source_field]['alt'] = pathinfo($file->getFilename(), PATHINFO_FILENAME);
+      }
+
+      $media = Media::create($media_data);
       $media->save();
 
       $counter++;
     }
 
-    // Log the results.
     $this->logger()->success("Converted $counter files to media entities. Skipped $skipped unsupported files.");
   }
 }
